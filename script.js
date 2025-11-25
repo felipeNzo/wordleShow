@@ -1,9 +1,7 @@
-// ESCOLHA O TIPO DE ARQUIVO QUE VOCÊ QUER CARREGAR
-
 // useTxt = true  → carrega words.txt
 // useTxt = false → carrega words.json
-const useTxt = false; 
-// ----------------------------------------------------------
+
+const useTxt = true; 
 
 let words = [];
 let secret = "";
@@ -13,10 +11,9 @@ let position = 0;
 const board = document.getElementById("board");
 const keyboard = document.getElementById("keyboard");
 
-
-// ----------------------------------------------------------
-// FUNÇÃO QUE CARREGA words.txt OU words.json AUTOMATICAMENTE
-// ----------------------------------------------------------
+// ---------------------------------------------
+// FUNÇÃO QUE CARREGA words.txt OU words.json
+// ---------------------------------------------
 function loadWords() {
   const file = useTxt ? "words.txt" : "words.json";
 
@@ -45,16 +42,20 @@ function loadWords() {
     });
 }
 
-
-// ----------------------------------------------------------
 loadWords();
-// ----------------------------------------------------------
 
 
-// ===================================================================
-// RESTANTE DO CÓDIGO DO JOGO (SEM ALTERAÇÕES)
-// ===================================================================
+// ---------------------------------------------
+// FUNÇÃO QUE VERIFICA SE A PALAVRA EXISTE
+// ---------------------------------------------
+function wordExists(word) {
+  return words.includes(word.toUpperCase());
+}
 
+
+// ---------------------------------------------
+// INÍCIO DO JOGO
+// ---------------------------------------------
 function startGame() {
   createBoard();
   createKeyboard();
@@ -99,6 +100,11 @@ function createKeyboard() {
   document.addEventListener("keydown", e => handleInput(e.key));
 }
 
+
+
+// ---------------------------------------------
+// MANIPULAÇÃO DE TECLAS
+// ---------------------------------------------
 function handleInput(key) {
   const rows = document.querySelectorAll(".row");
   const tiles = rows[attempt].querySelectorAll(".tile");
@@ -115,6 +121,15 @@ function handleInput(key) {
 
   if (key === "Enter" && position === 5) {
     const guess = Array.from(tiles).map(t => t.textContent).join("");
+
+    // ---------------------------------------------
+    // VALIDAÇÃO DA PALAVRA NO BANCO
+    // ---------------------------------------------
+    if (!wordExists(guess)) {
+      alert("Essa palavra não tem!");
+      return; // impede continuar
+    }
+
     checkGuess(guess, tiles);
     updateKeyboard(guess);
 
@@ -132,6 +147,11 @@ function handleInput(key) {
   }
 }
 
+
+
+// ---------------------------------------------
+// VERIFICA LETRAS (CORRETA, PRESENTE, AUSENTE)
+// ---------------------------------------------
 function checkGuess(guess, tiles) {
   const secretArray = secret.split("");
 
@@ -154,6 +174,11 @@ function checkGuess(guess, tiles) {
   }
 }
 
+
+
+// ---------------------------------------------
+// ATUALIZA O TECLADO VIRTUAL
+// ---------------------------------------------
 function updateKeyboard(guess) {
   for (let i = 0; i < 5; i++) {
     const key = [...document.querySelectorAll(".key")]
