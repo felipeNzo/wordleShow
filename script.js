@@ -1,5 +1,4 @@
-  //  VARIÁVEIS GLOBAIS
-
+// VARIÁVEIS GLOBAIS
 let words = [];
 let wordsNoAccent = [];
 
@@ -8,15 +7,17 @@ let secretNoAccent = "";
 
 let attempt = 0;
 let position = 0;
+let gameOver = false;
 
 const board = document.getElementById("board");
 const keyboard = document.getElementById("keyboard");
+const restartBtn = document.getElementById("restart");
 
-  //  FUNÇÃO PARA REMOVER ACENTOS
-
+// REMOVE ACENTOS
 const removeAccents = (str) =>
   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+// CARREGA PALAVRAS
 function loadWords() {
   fetch("words.json")
     .then((res) => res.json())
@@ -24,12 +25,7 @@ function loadWords() {
       words = data.map((w) => w.trim().toUpperCase());
       wordsNoAccent = words.map((w) => removeAccents(w));
 
-      const index = Math.floor(Math.random() * words.length);
-      secret = words[index];
-      secretNoAccent = wordsNoAccent[index];
-
-      console.log("Palavra secreta:", secret);
-
+      resetSecret();
       startGame();
     })
     .catch(() => alert("Erro ao carregar words.json"));
@@ -37,37 +33,36 @@ function loadWords() {
 
 loadWords();
 
-  //  VERIFICA SE A PALAVRA EXISTE
-
+// EXISTÊNCIA DA PALAVRA
 function wordExists(word) {
-  const wordNoAcc = removeAccents(word).toUpperCase();
-  return wordsNoAccent.includes(wordNoAcc);
+  return wordsNoAccent.includes(removeAccents(word));
 }
 
-  //  INÍCIO DO JOGO
-
+// INÍCIO
 function startGame() {
   createBoard();
   createKeyboard();
 }
 
+// TABULEIRO
 function createBoard() {
   for (let i = 0; i < 6; i++) {
     const row = document.createElement("div");
     row.className = "row";
+
     for (let j = 0; j < 5; j++) {
       const tile = document.createElement("div");
       tile.className = "tile";
       row.appendChild(tile);
     }
+
     board.appendChild(row);
   }
 }
 
 const keys = [..."QWERTYUIOP", ..."ASDFGHJKL", ..."ZXCVBNM"];
 
-  //  TECLADO VIRTUAL + FÍSICO
-
+// TECLADO
 function createKeyboard() {
   keys.forEach((letter) => {
     const k = document.createElement("div");
@@ -88,32 +83,32 @@ function createKeyboard() {
   back.textContent = "←";
   back.onclick = () => handleInput("Backspace");
   keyboard.appendChild(back);
-
-    //  TECLADO FÍSICO – ACEITA ACENTO
-  document.addEventListener("keydown", (e) => {
-    let key = e.key;
-
-    // Se for letra (inclusive acentuada), converter
-    if (key.length === 1) {
-      const converted = removeAccents(key).toUpperCase();
-      if (/^[A-Z]$/.test(converted)) {
-        handleInput(converted);
-        return;
-      }
-    }
-
-    handleInput(e.key);
-  });
 }
 
-  //  MANIPULAÇÃO DAS TECLAS
+// TECLADO FÍSICO
+document.addEventListener("keydown", (e) => {
+  if (gameOver) return;
 
+  if (e.key.length === 1) {
+    const k = removeAccents(e.key).toUpperCase();
+    if (/^[A-Z]$/.test(k)) {
+      handleInput(k);
+      return;
+    }
+  }
+
+  handleInput(e.key);
+});
+
+// INPUT
 function handleInput(key) {
+  if (gameOver) return;
+
   const rows = document.querySelectorAll(".row");
   const tiles = rows[attempt].querySelectorAll(".tile");
 
   if (/^[A-Z]$/.test(key) && position < 5) {
-    tiles[position].textContent = key.toUpperCase();
+    tiles[position].textContent = key;
     position++;
   }
 
@@ -123,11 +118,10 @@ function handleInput(key) {
   }
 
   if (key === "Enter" && position === 5) {
-    const guess = Array.from(tiles).map((t) => t.textContent).join("");
+    const guess = [...tiles].map(t => t.textContent).join("");
 
-    // Verifica existência no banco
     if (!wordExists(guess)) {
-      alert("Essa palavra não tem!");
+      alert("Essa palavra não existe!");
       return;
     }
 
@@ -135,7 +129,9 @@ function handleInput(key) {
     updateKeyboard(guess);
 
     if (removeAccents(guess) === secretNoAccent) {
-      alert("Você acertou!");
+      animateWin(tiles);
+      gameOver = true;
+      showRestartButton();
       return;
     }
 
@@ -144,25 +140,24 @@ function handleInput(key) {
 
     if (attempt === 6) {
       alert("Fim do jogo! A palavra era: " + secret);
+      gameOver = true;
+      showRestartButton();
     }
   }
 }
 
-  //  VERIFICA LETRAS (CORRETA / PRESENTE / AUSENTE)
-
+// VERIFICA LETRAS
 function checkGuess(guess, tiles) {
   const guessNoAcc = removeAccents(guess);
-  const secretArr = secretNoAccent.split("");
+  let secretArr = secretNoAccent.split("");
 
-  // Letras corretas
   for (let i = 0; i < 5; i++) {
-    if (guessNoAcc[i] === secretNoAccent[i]) {
+    if (guessNoAcc[i] === secretArr[i]) {
       tiles[i].classList.add("correct");
       secretArr[i] = null;
     }
   }
 
-  // Letras presentes em posição errada
   for (let i = 0; i < 5; i++) {
     if (!tiles[i].classList.contains("correct")) {
       const idx = secretArr.indexOf(guessNoAcc[i]);
@@ -176,25 +171,63 @@ function checkGuess(guess, tiles) {
   }
 }
 
-  //  ATUALIZA O TECLADO
-
+// TECLADO CORES
 function updateKeyboard(guess) {
   const guessNoAcc = removeAccents(guess);
 
   for (let i = 0; i < 5; i++) {
     const letter = guessNoAcc[i];
-    const key = [...document.querySelectorAll(".key")].find(
-      (k) => k.textContent === letter
-    );
 
-    if (!key) continue;
+    const key = [...document.querySelectorAll(".key")]
+      .find(k => k.textContent === letter);
+
+    if (!key || key.classList.contains("correct")) continue;
 
     if (letter === secretNoAccent[i]) {
+      key.classList.remove("present", "absent");
       key.classList.add("correct");
     } else if (secretNoAccent.includes(letter)) {
-      if (!key.classList.contains("correct")) key.classList.add("present");
+      if (!key.classList.contains("present")) {
+        key.classList.remove("absent");
+        key.classList.add("present");
+      }
     } else {
       key.classList.add("absent");
     }
   }
+}
+
+// ANIMAÇÃO DE VITÓRIA
+function animateWin(tiles) {
+  tiles.forEach((tile, i) => {
+    setTimeout(() => tile.classList.add("win"), i * 100);
+  });
+}
+
+// REINICIAR
+restartBtn.onclick = resetGame;
+
+function showRestartButton() {
+  restartBtn.style.display = "block";
+}
+
+function resetSecret() {
+  const index = Math.floor(Math.random() * words.length);
+  secret = words[index];
+  secretNoAccent = wordsNoAccent[index];
+  console.log("Palavra secreta:", secret);
+}
+
+function resetGame() {
+  board.innerHTML = "";
+  keyboard.innerHTML = "";
+
+  attempt = 0;
+  position = 0;
+  gameOver = false;
+
+  resetSecret();
+  restartBtn.style.display = "none";
+
+  startGame();
 }
