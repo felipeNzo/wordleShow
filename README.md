@@ -31,3 +31,5 @@ Este projeto é livre para fins de estudo e aprendizado.
 👤 Autor
 Desenvolvido por  felipeNzo (NzoShow) 🚀
 📍 Brasil
+
+teste em https://felipenzo.github.io/wordleShow/
