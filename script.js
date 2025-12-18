@@ -1,6 +1,9 @@
+// ===============================
 // VARIÁVEIS GLOBAIS
+// ===============================
 let words = [];
 let wordsNoAccent = [];
+let usedWords = [];
 
 let secret = "";
 let secretNoAccent = "";
@@ -13,17 +16,26 @@ const board = document.getElementById("board");
 const keyboard = document.getElementById("keyboard");
 const restartBtn = document.getElementById("restart");
 
+const losePopup = document.getElementById("lose-popup");
+const loseWordText = document.getElementById("lose-word");
+const popupRestartBtn = document.getElementById("popup-restart");
+
+
+// ===============================
 // REMOVE ACENTOS
+// ===============================
 const removeAccents = (str) =>
   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+// ===============================
 // CARREGA PALAVRAS
+// ===============================
 function loadWords() {
   fetch("words.json")
     .then((res) => res.json())
     .then((data) => {
-      words = data.map((w) => w.trim().toUpperCase());
-      wordsNoAccent = words.map((w) => removeAccents(w));
+      words = data.map(w => w.trim().toUpperCase());
+      wordsNoAccent = words.map(w => removeAccents(w));
 
       resetSecret();
       startGame();
@@ -33,19 +45,27 @@ function loadWords() {
 
 loadWords();
 
+// ===============================
 // EXISTÊNCIA DA PALAVRA
+// ===============================
 function wordExists(word) {
   return wordsNoAccent.includes(removeAccents(word));
 }
 
+// ===============================
 // INÍCIO
+// ===============================
 function startGame() {
   createBoard();
   createKeyboard();
 }
 
+// ===============================
 // TABULEIRO
+// ===============================
 function createBoard() {
+  board.innerHTML = "";
+
   for (let i = 0; i < 6; i++) {
     const row = document.createElement("div");
     row.className = "row";
@@ -62,9 +82,13 @@ function createBoard() {
 
 const keys = [..."QWERTYUIOP", ..."ASDFGHJKL", ..."ZXCVBNM"];
 
-// TECLADO
+// ===============================
+// TECLADO VIRTUAL
+// ===============================
 function createKeyboard() {
-  keys.forEach((letter) => {
+  keyboard.innerHTML = "";
+
+  keys.forEach(letter => {
     const k = document.createElement("div");
     k.className = "key";
     k.textContent = letter;
@@ -85,7 +109,9 @@ function createKeyboard() {
   keyboard.appendChild(back);
 }
 
+// ===============================
 // TECLADO FÍSICO
+// ===============================
 document.addEventListener("keydown", (e) => {
   if (gameOver) return;
 
@@ -100,7 +126,9 @@ document.addEventListener("keydown", (e) => {
   handleInput(e.key);
 });
 
+// ===============================
 // INPUT
+// ===============================
 function handleInput(key) {
   if (gameOver) return;
 
@@ -110,25 +138,38 @@ function handleInput(key) {
   if (/^[A-Z]$/.test(key) && position < 5) {
     tiles[position].textContent = key;
     position++;
+    return;
   }
 
   if (key === "Backspace" && position > 0) {
     position--;
     tiles[position].textContent = "";
+    return;
   }
 
   if (key === "Enter" && position === 5) {
     const guess = [...tiles].map(t => t.textContent).join("");
+    const guessNoAcc = removeAccents(guess);
 
+    // Palavra inexistente
     if (!wordExists(guess)) {
-      alert("Essa palavra não existe!");
+      animateInvalidWord(rows[attempt]);
       return;
     }
+
+    // Palavra repetida
+    if (usedWords.includes(guessNoAcc)) {
+      animateInvalidWord(rows[attempt]);
+      return;
+    }
+
+    usedWords.push(guessNoAcc);
 
     checkGuess(guess, tiles);
     updateKeyboard(guess);
 
-    if (removeAccents(guess) === secretNoAccent) {
+    // Vitória
+    if (guessNoAcc === secretNoAccent) {
       animateWin(tiles);
       gameOver = true;
       showRestartButton();
@@ -139,18 +180,20 @@ function handleInput(key) {
     position = 0;
 
     if (attempt === 6) {
-      alert("Fim do jogo! A palavra era: " + secret);
       gameOver = true;
-      showRestartButton();
+      showLosePopup();
     }
   }
 }
 
+// ===============================
 // VERIFICA LETRAS
+// ===============================
 function checkGuess(guess, tiles) {
   const guessNoAcc = removeAccents(guess);
   let secretArr = secretNoAccent.split("");
 
+  // Letras corretas
   for (let i = 0; i < 5; i++) {
     if (guessNoAcc[i] === secretArr[i]) {
       tiles[i].classList.add("correct");
@@ -158,6 +201,7 @@ function checkGuess(guess, tiles) {
     }
   }
 
+  // Letras presentes / ausentes
   for (let i = 0; i < 5; i++) {
     if (!tiles[i].classList.contains("correct")) {
       const idx = secretArr.indexOf(guessNoAcc[i]);
@@ -171,13 +215,14 @@ function checkGuess(guess, tiles) {
   }
 }
 
+// ===============================
 // TECLADO CORES
+// ===============================
 function updateKeyboard(guess) {
   const guessNoAcc = removeAccents(guess);
 
   for (let i = 0; i < 5; i++) {
     const letter = guessNoAcc[i];
-
     const key = [...document.querySelectorAll(".key")]
       .find(k => k.textContent === letter);
 
@@ -187,24 +232,33 @@ function updateKeyboard(guess) {
       key.classList.remove("present", "absent");
       key.classList.add("correct");
     } else if (secretNoAccent.includes(letter)) {
-      if (!key.classList.contains("present")) {
-        key.classList.remove("absent");
-        key.classList.add("present");
-      }
+      key.classList.add("present");
     } else {
       key.classList.add("absent");
     }
   }
 }
 
+// ===============================
+// ANIMAÇÃO DE ERRO
+// ===============================
+function animateInvalidWord(row) {
+  row.classList.add("invalid");
+  setTimeout(() => row.classList.remove("invalid"), 600);
+}
+
+// ===============================
 // ANIMAÇÃO DE VITÓRIA
+// ===============================
 function animateWin(tiles) {
   tiles.forEach((tile, i) => {
     setTimeout(() => tile.classList.add("win"), i * 100);
   });
 }
 
+// ===============================
 // REINICIAR
+// ===============================
 restartBtn.onclick = resetGame;
 
 function showRestartButton() {
@@ -218,16 +272,30 @@ function resetSecret() {
   console.log("Palavra secreta:", secret);
 }
 
-function resetGame() {
-  board.innerHTML = "";
-  keyboard.innerHTML = "";
+function showLosePopup() {
+  loseWordText.textContent = secret;
+  losePopup.classList.remove("hidden");
+}
 
+popupRestartBtn.onclick = () => {
+  losePopup.classList.add("hidden");
+  resetGame();
+};
+
+
+function resetGame() {
   attempt = 0;
   position = 0;
   gameOver = false;
+  usedWords = [];
+
+  board.innerHTML = "";
+  keyboard.innerHTML = "";
 
   resetSecret();
   restartBtn.style.display = "none";
+  losePopup.classList.add("hidden");
 
   startGame();
 }
+

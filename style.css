@@ -34,6 +34,27 @@ h1 {
   gap: 8px;
 }
 
+/* LINHA INVÁLIDA */
+.row.invalid .tile {
+  background-color: #7f1d1d;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+/* ANIMAÇÃO DE SHAKE */
+.row.invalid {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-5px); }
+  40%  { transform: translateX(5px); }
+  60%  { transform: translateX(-5px); }
+  80%  { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
 /* TILES RESPONSIVOS */
 .tile {
   width: clamp(44px, 12vw, 60px);
@@ -135,6 +156,75 @@ h1 {
 #restart:hover {
   opacity: 0.9;
 }
+
+/*POPUP DE DERROTA*/
+
+.popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.popup.hidden {
+  display: none;
+}
+
+.popup-content {
+  background: #1a1a1b;
+  border-radius: 12px;
+  padding: 30px 25px;
+  text-align: center;
+  width: 90%;
+  max-width: 320px;
+  animation: popupIn 0.3s ease-out;
+}
+
+.popup-content h2 {
+  margin: 0 0 10px;
+}
+
+.popup-content p {
+  margin: 10px 0 5px;
+  color: #ccc;
+}
+
+.popup-content strong {
+  display: block;
+  font-size: 26px;
+  letter-spacing: 4px;
+  margin-bottom: 20px;
+  color: #538d4e;
+}
+
+.popup-content button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background: #538d4e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.popup-content button:hover {
+  opacity: 0.9;
+}
+
+@keyframes popupIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 
 /* 📱 AJUSTES EXTRAS PARA TELAS PEQUENAS */
 @media (max-width: 360px) {
